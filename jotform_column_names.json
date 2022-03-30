@@ -1,0 +1,40 @@
+{
+    "submit": "submit",
+    "email": [
+        "email",
+        "correoElectronico"
+    ],
+    "phoneNumber": [
+        "phoneNumber",
+        "numero"
+    ],
+    "lastName": [
+        "lastName",
+        "apellido"
+    ],
+    "firstName": [
+        "firstName",
+        "nombre"
+    ],
+    "utm_source": [
+        "utm_source",
+        "utm_source"
+    ],
+    "utm_medium": [
+        "utm_medium",
+        "utm_medium"
+    ],
+    "utm_campaign": [
+        "utm_campaign",
+        "utm_campaign"
+    ],
+    "utm_term": "utm_term",
+    "zipCode": [
+        "zipCode",
+        "codigoPostal"
+    ],
+    "utm_content": [
+        "utm_content",
+        "utm_content"
+    ]
+}
