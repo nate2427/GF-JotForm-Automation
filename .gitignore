@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+gf_google_leads.xlsx
+thrive_google_leads.xlsx

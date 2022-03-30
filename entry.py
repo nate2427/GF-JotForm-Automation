@@ -68,6 +68,20 @@ class GF_Google_Lead_Submission:
             self.utm_source = temp_source
             self.utm_medium = temp_medium
 
+    def toJSON(self):
+        return {
+            "submission_date": self.submission_date,
+            "fName": self.fName,
+            "lName": self.lName,
+            "email": self.email,
+            "phone": self.phone,
+            "zipcode": self.zipcode,
+            "utm_source": self.utm_source,
+            "utm_medium": self.utm_medium,
+            "utm_campaign": self.utm_campaign,
+            "utm_content": self.utm_content
+        }
+
 
 class Thrive_Google_Lead_Submission(GF_Google_Lead_Submission):
     '''
@@ -90,32 +104,20 @@ class Thrive_Google_Lead_Submission(GF_Google_Lead_Submission):
         super().__init__(thrive_submission_info)
         self.utm_term = thrive_submission_info['utm_term']
 
-
-# Date range logic below
-
-'''
-    create function called find_closest_start_date that looks through a list of objects and returns 
-    the first object that has a created_at that matches the input date or closest.
-
-    forms_list = list of jotform objects that represent basic form information
-        we are going to look at the created_at field of each object and
-        abstract the date from the date/time string and see if it matches the input staryDate
-'''
-
-
-def find_closest_date_form(qDate, forms_list):
-    smallest_diff = None
-    closest_date = None
-    for item in forms_list:
-        extract_current_date = extract_string_date(item['created_at'])
-        diff = find_interval_start_date(qDate, extract_current_date)
-        if smallest_diff == None:
-            smallest_diff = diff
-            closest_date = item
-        elif diff < smallest_diff:
-            smallest_diff = diff
-            closest_date = item
-    return closest_date
+    def toJSON(self):
+        return {
+            "submission_date": self.submission_date,
+            "fName": self.fName,
+            "lName": self.lName,
+            "email": self.email,
+            "phone": self.phone,
+            "zipcode": self.zipcode,
+            "utm_source": self.utm_source,
+            "utm_medium": self.utm_medium,
+            "utm_campaign": self.utm_campaign,
+            "utm_content": self.utm_content,
+            "utm_term": self.utm_term
+        }
 
 
 '''
@@ -160,17 +162,6 @@ def format_date(date_str):
     return{"year": year, "month": month, "day": day}
 
 
-# Data extraction logic below
-def clean_list_of_forms_by_date(start_date, end_date, forms_list):
-    cleaned_list = []
-    for item in forms_list:
-        current_created_at_date = extract_string_date(item['created_at'])
-        last_updated_date = extract_string_date(item['updated_at'])
-        if is_within_date_range(start_date, end_date, current_created_at_date, last_updated_date):
-            cleaned_list.append(item)
-    return cleaned_list
-
-
 def is_within_date_range(start_date, end_date, current_created_at_date, last_updated_date):
     if (current_created_at_date >= start_date and current_created_at_date <= end_date) or (last_updated_date >= start_date):
         return True
@@ -183,8 +174,6 @@ def organize_form_submission_list(form_submission_list, jotformAPIClient, startD
         "gf": [],
         "thrive": []
     }
-    ids_to_ignore = ["211311682715045",
-                     "5232708356989665338", "93357405581158"]
     gf_google_leads = []
     thrive_google_leads = []
     count = 0
@@ -205,6 +194,8 @@ def organize_form_submission_list(form_submission_list, jotformAPIClient, startD
                 if formLocation == "gf":
                     gf_google_lead_obj = GF_Google_Lead_Submission(
                         form_submission_obj)
+                    gf_google_lead_obj.clean_submission_info(
+                        form['title'])
                     gf_google_leads.append(gf_google_lead_obj)
                     count = count + 1
                 elif formLocation.isdigit() or "thrive" in formLocation:
@@ -218,7 +209,6 @@ def organize_form_submission_list(form_submission_list, jotformAPIClient, startD
                         form_submission_obj)
                     thrive_google_leads.append(thrive_google_lead_obj)
                     count = count + 1
-
             else:
                 gf_google_lead_obj = GF_Google_Lead_Submission(
                     form_submission_obj)
@@ -306,6 +296,7 @@ def create_google_leads_excel_files(google_leads_obj):
     create_google_leads_excel_file(gf_google_leads, filename="gf_google_leads")
     create_google_leads_excel_file(
         thrive_google_leads, filename="thrive_google_leads")
+    return ("gf_google_leads.xlsx", "thrive_google_leads.xlsx")
 
 
 def create_google_leads_excel_file(google_leads_list, filename):
@@ -367,6 +358,18 @@ def get_col_names_from_dict(answer_dic):
     return names
 
 
+def get_forms(startDate, jotform_client):
+    jotforms = jotform_client.get_forms(
+        0, 500, {'last_submission:gte': startDate}, "created_at")
+    forms = []
+    for form in jotforms:
+        forms.append({
+            'id': form['id'],
+            'title': form['title'],
+        })
+    return forms
+
+
 def main():
 
     jotformAPIClient = JotformAPIClient(jotform_apikey)
@@ -377,8 +380,7 @@ def main():
     iDate1 = iDate1 + " 00:00:00"
     iDate2 = iDate2 + " 23:59:59"
 
-    forms = jotformAPIClient.get_forms(
-        0, 500, {'last_submission:gte': iDate1}, "created_at")
+    forms = get_forms(iDate1, jotformAPIClient)
 
     organized_form_list = organize_form_submission_list(
         forms, jotformAPIClient, iDate1, iDate2)

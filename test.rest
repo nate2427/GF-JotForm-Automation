@@ -2,6 +2,27 @@ POST http://127.0.0.1:5000/api/v1/get-date-range HTTP/1.1
 content-type: application/json
 
 {
-    "name": "sample",
-    "time": "Wed, 21 Oct 2015 18:27:50 GMT"
+    "start_date": "2022-03-18",
+    "end_date": "2022-03-25"
+}
+
+################################################################################
+POST http://127.0.0.1:5000/api/v1/get-forms-and-submissions HTTP/1.1
+content-type: application/json
+
+{
+    "start_date": "2022-03-18",
+    "end_date": "2022-03-25"
+}
+
+################################################################################
+GET http://127.0.0.1:5000/api/v1/get-dates
+Content-Type: application/json
+
+################################################################################
+POST http://127.0.0.1:5000/api/v1/get-download-links HTTP/1.1
+content-type: application/json
+
+{
+    "form_type": "gf"
 }

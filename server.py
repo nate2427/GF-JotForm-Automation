@@ -1,7 +1,7 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS, cross_origin
-from entry import find_closest_date_form, clean_list_of_forms_by_date, extract_string_date, organize_form_submission_list, create_google_leads_excel_files
+from entry import find_closest_date_form, clean_list_of_forms_by_date, extract_string_date, get_forms, organize_form_submission_list, create_google_leads_excel_files
 from jotform import *
 
 
@@ -11,7 +11,16 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 
 jotform_apikey = os.getenv("JOTFORM_APIKEY")
 # globals
-form_list = []
+jotform_info = {
+    "form_list": [],
+    "start_date": "",
+    "end_date": "",
+    "organized_form_submissions": {
+        "gf": [],
+        "thrive": [],
+    },
+    "files": None
+}
 
 
 @app.route("/")
@@ -23,18 +32,68 @@ def hello_world():
 @cross_origin()
 def get_date_range():
     data = request.get_json()
-    start_date = data["start_date"]
-    end_date = data["end_date"]
+    jotform_info['start_date'] = data["start_date"] + " 00:00:00"
+    jotform_info['end_date'] = data["end_date"] + " 23:59:59"
 
     jotformAPIClient = JotformAPIClient(jotform_apikey)
-    forms = jotformAPIClient.get_forms(limit=50)
-    start_form_date = find_closest_date_form(start_date, forms)
-    end_form_date = find_closest_date_form(end_date, forms)
+    jotform_info['form_list'] = get_forms(
+        jotform_info['start_date'], jotformAPIClient)
 
-    cleaned_list_of_forms = clean_list_of_forms_by_date(
-        start_date=extract_string_date(start_form_date['created_at']),
-        end_date=extract_string_date(start_form_date['created_at']),
-        forms_list=forms
-    )
+    return jsonify(jotform_info['form_list'])
 
-    return jsonify(cleaned_list_of_forms)
+
+@app.route("/api/v1/get-forms-and-submissions", methods=["POST"])
+@cross_origin()
+def get_forms_and_submissions():
+    jotformAPIClient = JotformAPIClient(jotform_apikey)
+    organized_form_submission_list_obj = organize_form_submission_list(
+        jotform_info['form_list'], jotformAPIClient, jotform_info['start_date'], jotform_info['end_date'])
+    jotform_info['organized_form_submissions']['gf'].clear()
+    jotform_info['organized_form_submissions']['thrive'].clear()
+    for gf_form in organized_form_submission_list_obj['gf']:
+        jotform_info['organized_form_submissions']['gf'].append(
+            gf_form.toJSON())
+    for thrive_form in organized_form_submission_list_obj['thrive']:
+        jotform_info['organized_form_submissions']['thrive'].append(
+            thrive_form.toJSON())
+    return jsonify(jotform_info['organized_form_submissions'])
+
+
+@app.route("/api/v1/get-dates", methods=["GET"])
+@cross_origin()
+def get_dates():
+    return jsonify({
+        "start_date": jotform_info['start_date'],
+        "end_date": jotform_info['end_date']
+    })
+
+
+@app.route("/api/v1/get-download-links", methods=["POST"])
+@cross_origin()
+def get_download_links():
+    data = request.get_json()
+    if jotform_info['files'] == None:
+        jotform_info['files'] = create_google_leads_excel_files(
+            jotform_info['organized_form_submissions'])
+    if data['form_type'] == "gf":
+        return jsonify({
+            "files": [jotform_info['files'][0]]
+        })
+    elif data['form_type'] == "thrive":
+        return jsonify({
+            "files": [jotform_info['files'][1]]
+        })
+    elif data['form_type'] == "both":
+        return jsonify({"files": [jotform_info['files'][0], jotform_info['files'][1]]})
+
+
+@app.route("/gf_google_leads.xlsx", methods=["GET"])
+@cross_origin()
+def download_gf_excel():
+    return send_file(jotform_info['files'][0], as_attachment=True)
+
+
+@app.route("/thrive_google_leads.xlsx", methods=["GET"])
+@cross_origin()
+def download_thrive_excel():
+    return send_file(jotform_info['files'][1], as_attachment=True)
