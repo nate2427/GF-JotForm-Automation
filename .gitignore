@@ -130,3 +130,5 @@ dmypy.json
 
 gf_google_leads.xlsx
 thrive_google_leads.xlsx
+
+.DS_Store
