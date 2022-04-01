@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS, cross_origin
-from entry import find_closest_date_form, clean_list_of_forms_by_date, extract_string_date, get_forms, organize_form_submission_list, create_google_leads_excel_files
+from entry import get_forms, organize_form_submission_list, create_google_leads_excel_files
 from jotform import *
 
 

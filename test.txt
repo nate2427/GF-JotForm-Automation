@@ -1,0 +1,24 @@
+Enter the start date in format YYYY-MM-DD: 2022-03-28
+Enter the end date in format YYYY-MM-DD: 2022-04-01
+GF leads list size:  1561
+Thrive leads list size:  749
+
+
+--- 6.87210488319397 seconds ---
+GF leads list size:  12933
+Thrive leads list size:  5193
+(env) streetcodernate@Nates-MacBook-Air gf_jotforms % python entry.py
+Enter the start date in format YYYY-MM-DD: 2022-03-30
+Enter the end date in format YYYY-MM-DD: 2022-04-01
+--- 24.535619974136353 seconds ---
+GF leads list size:  1310
+Thrive leads list size:  450
+
+
+Enter the end date in format YYYY-MM-DD: 2022-04-01
+--- 8.203430891036987 seconds ---
+GF leads list size:  1343
+Thrive leads list size:  465
+--- 26.63950490951538 seconds ---
+GF leads list size:  1343
+Thrive leads list size:  465

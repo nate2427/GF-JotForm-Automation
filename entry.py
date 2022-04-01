@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from datetime import date
 import xlsxwriter
 import json
+import asyncio
+import aiohttp
 
 load_dotenv()
 
@@ -15,17 +17,17 @@ jotform_apikey = os.getenv("JOTFORM_APIKEY")
 class GF_Google_Lead_Submission:
     '''
         gf_submission_info = {
-            "submission_date": "2020-03-03",
-            "fName": "John",
-            "lName": "Smith",
-            "email": "email@user.com".
-            "phone": "1234567890",
-            "zipcode": "12345",
-            "utm_source": "google",
-            "utm_medium": "cpc",
-            "utm_campaign": "test",
-            "utm_content": "test",
-        }    
+                "submission_date": "2020-03-03",
+                "fName": "John",
+                "lName": "Smith",
+                "email": "email@user.com".
+                "phone": "1234567890",
+                "zipcode": "12345",
+                "utm_source": "google",
+                "utm_medium": "cpc",
+                "utm_campaign": "test",
+                "utm_content": "test",
+        }
     '''
 
     def __init__(self, gf_submission_info):
@@ -42,8 +44,8 @@ class GF_Google_Lead_Submission:
 
     def clean_submission_info(self, form_name):
         '''
-            clean up the submission info by adding values to the areas that are
-            blank and by replacing certain values
+                        clean up the submission info by adding values to the areas that are
+                        blank and by replacing certain values
         '''
         if self.utm_source == "attentive":
             self.utm_source = "sms"
@@ -84,20 +86,21 @@ class GF_Google_Lead_Submission:
 
 
 class Thrive_Google_Lead_Submission(GF_Google_Lead_Submission):
+
     '''
         thrive_submission_info = {
-            "submission_date": "2020-03-03",
-            "fName": "John",
-            "lName": "Smith",
-            "email": "email@user.com".
-            "phone": "1234567890",
-            "zipcode": "12345",
-            "utm_source": "google",
-            "utm_medium": "cpc",
-            "utm_campaign": "test",
-            "utm_content": "test",
-            "utm_term": "test",
-        }    
+                "submission_date": "2020-03-03",
+                "fName": "John",
+                "lName": "Smith",
+                "email": "email@user.com".
+                "phone": "1234567890",
+                "zipcode": "12345",
+                "utm_source": "google",
+                "utm_medium": "cpc",
+                "utm_campaign": "test",
+                "utm_content": "test",
+                "utm_term": "test",
+        }
     '''
 
     def __init__(self, thrive_submission_info):
@@ -121,8 +124,8 @@ class Thrive_Google_Lead_Submission(GF_Google_Lead_Submission):
 
 
 '''
-    date_start = "2020-03-04 00:00:00"
-    returns = "2020-03-04"
+	date_start = "2020-03-04 00:00:00"
+	returns = "2020-03-04"
 '''
 
 
@@ -132,7 +135,7 @@ def extract_string_date(date_str):
 
 
 '''
-    start_date/end_date = "2020-10-04" <format of te date string>
+	start_date/end_date = "2020-10-04" <format of te date string>
 '''
 
 
@@ -144,7 +147,7 @@ def find_interval_start_date(start_date, end_date):
 
 
 '''
-    this function returns the number of days between two dates
+	this function returns the number of days between two dates
 '''
 
 
@@ -167,6 +170,21 @@ def is_within_date_range(start_date, end_date, current_created_at_date, last_upd
         return True
     else:
         return False
+
+
+def create_conditions(offset, limit, filterArray, order_by):
+    args = {'offset': offset, 'limit': limit,
+            'filter': filterArray, 'orderby': order_by}
+    params = {}
+
+    for key in list(args.keys()):
+        if(args[key]):
+            if(key == 'filter'):
+                params[key] = json.dumps(args[key])
+            else:
+                params[key] = args[key]
+
+    return params
 
 
 def organize_form_submission_list(form_submission_list, jotformAPIClient, startDate, endDate):
@@ -217,6 +235,87 @@ def organize_form_submission_list(form_submission_list, jotformAPIClient, startD
                 gf_google_leads.append(gf_google_lead_obj)
                 count = count + 1
 
+    cleaned_form_submission_data['gf'].extend(gf_google_leads)
+    cleaned_form_submission_data['thrive'].extend(thrive_google_leads)
+    return cleaned_form_submission_data
+
+
+async def get_form_submissions(session, form_id, title, startDate, endDate):
+    params = create_conditions(
+        0, 10000, {'created_at:gte': startDate, 'created_at:lte': endDate}, "created_at")
+    url = "https://api.jotform.com/form/{form_id}/submissions?apiKey={jotformAPIKey}".format(
+        form_id=form_id, jotformAPIKey=jotform_apikey)
+
+    form_submissions = None
+
+    async with session.get(url, params=params) as resp:
+        data = await resp.json()
+        form_submissions = data['content']
+
+    gf_google_leads = []
+    thrive_google_leads = []
+    for form_submission in form_submissions:
+        form_answers = form_submission['answers']
+        utm_content_key = find_key_in_dict(
+            ['utm_content', 'utm_content'], form_answers)
+        if utm_content_key == None:
+            continue
+        utm_content_obj = form_answers[utm_content_key]
+        formLocation = utm_content_obj['answer'] if 'answer' in utm_content_obj else None
+        form_submission_obj = create_form_submission_object(
+            form_submission)
+        if formLocation:
+            if formLocation == "gf":
+                gf_google_lead_obj = GF_Google_Lead_Submission(
+                    form_submission_obj)
+                gf_google_lead_obj.clean_submission_info(
+                    title)
+                gf_google_leads.append(gf_google_lead_obj)
+            elif formLocation.isdigit() or "thrive" in formLocation:
+                utm_term_key = find_key_in_dict(
+                    ['utm_term', 'utm_term'], form_answers)
+                if 'answer' in form_submission['answers'][utm_term_key]:
+                    form_submission_obj['utm_term'] = form_submission['answers'][utm_term_key]['answer']
+                else:
+                    form_submission_obj['utm_term'] = ''
+                thrive_google_lead_obj = Thrive_Google_Lead_Submission(
+                    form_submission_obj)
+                thrive_google_leads.append(thrive_google_lead_obj)
+        else:
+            gf_google_lead_obj = GF_Google_Lead_Submission(
+                form_submission_obj)
+            gf_google_lead_obj.clean_submission_info(
+                title)
+            gf_google_leads.append(gf_google_lead_obj)
+
+    return gf_google_leads, thrive_google_leads
+
+
+async def gather_form_submissions(form_submission_list, startDate, endDate):
+    tasks = []
+    async with aiohttp.ClientSession() as session:
+        for form in form_submission_list:
+            task = asyncio.ensure_future(get_form_submissions(
+                session, form['id'], form['title'], startDate, endDate))
+            tasks.append(task)
+        res = await asyncio.gather(*tasks)
+    return res
+
+
+def organize_form_submission_list_async(form_submission_list, startDate, endDate):
+    cleaned_form_submission_data = {
+        "gf": [],
+        "thrive": []
+    }
+    gf_google_leads = []
+    thrive_google_leads = []
+    res = asyncio.run(gather_form_submissions(
+        form_submission_list, startDate, endDate))
+    gf_count = 0
+    for form in res:
+        gf_google_leads.extend(form[0])
+        thrive_google_leads.extend(form[1])
+        gf_count = gf_count + len(form[0])
     cleaned_form_submission_data['gf'].extend(gf_google_leads)
     cleaned_form_submission_data['thrive'].extend(thrive_google_leads)
     return cleaned_form_submission_data
@@ -346,6 +445,9 @@ def create_excel_file(google_leads_list, excel_sheet_name):
 
 def find_key_in_dict(value, answer_dic):
     for k, v in answer_dic.items():
+        if 'name' not in v:
+            print(v)
+            continue
         if v['name'] == value[0] or value[0] in v['name'] or value[1] in v['name']:
             return k
     return None
@@ -382,8 +484,18 @@ def main():
 
     forms = get_forms(iDate1, jotformAPIClient)
 
+    start_time = time.time()
+
     organized_form_list = organize_form_submission_list(
         forms, jotformAPIClient, iDate1, iDate2)
+
+    # organized_form_list = organize_form_submission_list_async(
+    #     forms, iDate1, iDate2)
+
+    print("--- %s seconds ---" % (time.time() - start_time))
+
+    print("GF leads list size: ", organized_form_list['gf'].__len__())
+    print("Thrive leads list size: ", organized_form_list['thrive'].__len__())
 
     create_google_leads_excel_files(organized_form_list)
 
