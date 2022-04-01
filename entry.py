@@ -187,59 +187,6 @@ def create_conditions(offset, limit, filterArray, order_by):
     return params
 
 
-def organize_form_submission_list(form_submission_list, jotformAPIClient, startDate, endDate):
-    cleaned_form_submission_data = {
-        "gf": [],
-        "thrive": []
-    }
-    gf_google_leads = []
-    thrive_google_leads = []
-    count = 0
-    for form in form_submission_list:
-        form_submissions = jotformAPIClient.get_form_submissions(
-            form['id'], 0, 10000, {'created_at:gte': startDate, 'created_at:lte': endDate}, "created_at")
-        for form_submission in form_submissions:
-            form_answers = form_submission['answers']
-            utm_content_key = find_key_in_dict(
-                ['utm_content', 'utm_content'], form_answers)
-            if utm_content_key == None:
-                continue
-            utm_content_obj = form_answers[utm_content_key]
-            formLocation = utm_content_obj['answer'] if 'answer' in utm_content_obj else None
-            form_submission_obj = create_form_submission_object(
-                form_submission)
-            if formLocation:
-                if formLocation == "gf":
-                    gf_google_lead_obj = GF_Google_Lead_Submission(
-                        form_submission_obj)
-                    gf_google_lead_obj.clean_submission_info(
-                        form['title'])
-                    gf_google_leads.append(gf_google_lead_obj)
-                    count = count + 1
-                elif formLocation.isdigit() or "thrive" in formLocation:
-                    utm_term_key = find_key_in_dict(
-                        ['utm_term', 'utm_term'], form_answers)
-                    if 'answer' in form_submission['answers'][utm_term_key]:
-                        form_submission_obj['utm_term'] = form_submission['answers'][utm_term_key]['answer']
-                    else:
-                        form_submission_obj['utm_term'] = ''
-                    thrive_google_lead_obj = Thrive_Google_Lead_Submission(
-                        form_submission_obj)
-                    thrive_google_leads.append(thrive_google_lead_obj)
-                    count = count + 1
-            else:
-                gf_google_lead_obj = GF_Google_Lead_Submission(
-                    form_submission_obj)
-                gf_google_lead_obj.clean_submission_info(
-                    form['title'])
-                gf_google_leads.append(gf_google_lead_obj)
-                count = count + 1
-
-    cleaned_form_submission_data['gf'].extend(gf_google_leads)
-    cleaned_form_submission_data['thrive'].extend(thrive_google_leads)
-    return cleaned_form_submission_data
-
-
 async def get_form_submissions(session, form_id, title, startDate, endDate):
     params = create_conditions(
         0, 10000, {'created_at:gte': startDate, 'created_at:lte': endDate}, "created_at")
@@ -486,11 +433,8 @@ def main():
 
     start_time = time.time()
 
-    organized_form_list = organize_form_submission_list(
-        forms, jotformAPIClient, iDate1, iDate2)
-
-    # organized_form_list = organize_form_submission_list_async(
-    #     forms, iDate1, iDate2)
+    organized_form_list = organize_form_submission_list_async(
+        forms, iDate1, iDate2)
 
     print("--- %s seconds ---" % (time.time() - start_time))
 
