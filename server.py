@@ -69,23 +69,14 @@ def get_dates():
     })
 
 
-@app.route("/api/v1/get-download-links", methods=["POST"])
+@app.route("/api/v1/get-download-links", methods=["GET"])
 @cross_origin()
 def get_download_links():
-    data = request.get_json()
     if jotform_info['files'] == None:
         jotform_info['files'] = create_google_leads_excel_files(
             jotform_info['organized_form_submissions'])
-    if data['form_type'] == "gf":
-        return jsonify({
-            "files": [jotform_info['files'][0]]
-        })
-    elif data['form_type'] == "thrive":
-        return jsonify({
-            "files": [jotform_info['files'][1]]
-        })
-    elif data['form_type'] == "both":
-        return jsonify({"files": [jotform_info['files'][0], jotform_info['files'][1]]})
+
+    return jsonify({"files": [jotform_info['files'][0], jotform_info['files'][1]]})
 
 
 @app.route("/gf_google_leads.xlsx", methods=["GET"])
