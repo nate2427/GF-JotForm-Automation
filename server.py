@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS, cross_origin
-from entry import get_forms, organize_form_submission_list, create_google_leads_excel_files
+from entry import get_forms, organize_form_submission_list_async, create_google_leads_excel_files
 from jotform import *
 
 
@@ -46,8 +46,8 @@ def get_date_range():
 @cross_origin()
 def get_forms_and_submissions():
     jotformAPIClient = JotformAPIClient(jotform_apikey)
-    organized_form_submission_list_obj = organize_form_submission_list(
-        jotform_info['form_list'], jotformAPIClient, jotform_info['start_date'], jotform_info['end_date'])
+    organized_form_submission_list_obj = organize_form_submission_list_async(
+        jotform_info['form_list'], jotform_info['start_date'], jotform_info['end_date'])
     jotform_info['organized_form_submissions']['gf'].clear()
     jotform_info['organized_form_submissions']['thrive'].clear()
     for gf_form in organized_form_submission_list_obj['gf']:
