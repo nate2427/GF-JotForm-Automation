@@ -47,17 +47,20 @@ def get_date_range():
 def get_forms_and_submissions():
     organized_form_submission_list_obj = organize_form_submission_list_async(
         jotform_info['form_list'], jotform_info['start_date'], jotform_info['end_date'])
-    if len(jotform_info['organized_form_submissions']['gf']):
+    if len(jotform_info['organized_form_submissions']['gf']) == 0:
         jotform_info['organized_form_submissions']['gf'].clear()
         jotform_info['organized_form_submissions']['thrive'].clear()
-    print("got forms and submissions")
-    for gf_form in organized_form_submission_list_obj['gf']:
-        jotform_info['organized_form_submissions']['gf'].append(
-            gf_form.toJSON())
-    for thrive_form in organized_form_submission_list_obj['thrive']:
-        jotform_info['organized_form_submissions']['thrive'].append(
-            thrive_form.toJSON())
-    return jsonify(jotform_info['organized_form_submissions'])
+    jotform_info['organized_form_submissions'] = organized_form_submission_list_obj
+    serialed_form_submission_list = {
+        "gf": [],
+        "thrive": [],
+    }
+    for form_submission in organized_form_submission_list_obj['gf']:
+        serialed_form_submission_list['gf'].append(form_submission.toJSON())
+    for form_submission in organized_form_submission_list_obj['thrive']:
+        serialed_form_submission_list['thrive'].append(
+            form_submission.toJSON())
+    return jsonify(serialed_form_submission_list)
 
 
 @app.route("/api/v1/get-dates", methods=["GET"])
