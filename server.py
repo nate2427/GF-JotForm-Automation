@@ -45,6 +45,7 @@ def get_date_range():
 @app.route("/api/v1/get-forms-and-submissions", methods=["POST"])
 @cross_origin()
 def get_forms_and_submissions():
+    hack = request.get_json()
     organized_form_submission_list_obj = organize_form_submission_list_async(
         jotform_info['form_list'], jotform_info['start_date'], jotform_info['end_date'])
     if len(jotform_info['organized_form_submissions']['gf']) == 0:
