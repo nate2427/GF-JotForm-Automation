@@ -86,10 +86,10 @@ def get_download_links():
 @app.route("/gf_google_leads.xlsx", methods=["GET"])
 @cross_origin()
 def download_gf_excel():
-    return send_file(jotform_info['files'][0], as_attachment=True)
+    return send_file('/gf_google_leads.xlsx', as_attachment=True)
 
 
 @app.route("/thrive_google_leads.xlsx", methods=["GET"])
 @cross_origin()
 def download_thrive_excel():
-    return send_file(jotform_info['files'][1], as_attachment=True)
+    return send_file('thrive_google_leads.xlsx', as_attachment=True)
