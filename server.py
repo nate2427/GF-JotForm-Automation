@@ -76,9 +76,8 @@ def get_dates():
 @app.route("/api/v1/get-download-links", methods=["GET"])
 @cross_origin()
 def get_download_links():
-    if jotform_info['files'] == None:
-        jotform_info['files'] = create_google_leads_excel_files(
-            jotform_info['organized_form_submissions'])
+    jotform_info['files'] = create_google_leads_excel_files(
+        jotform_info['organized_form_submissions'])
 
     return jsonify({"files": [jotform_info['files'][0], jotform_info['files'][1]]})
 
