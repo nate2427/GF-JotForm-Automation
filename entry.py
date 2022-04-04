@@ -351,6 +351,9 @@ def create_google_leads_excel_file(google_leads_list, filename):
 
 
 def create_excel_file(google_leads_list, excel_sheet_name):
+    # remove file if it exists
+    if os.path.exists(excel_sheet_name):
+        os.remove(excel_sheet_name)
     google_leads_excel_file = xlsxwriter.Workbook(excel_sheet_name)
     google_leads_excel_sheet = google_leads_excel_file.add_worksheet()
 
