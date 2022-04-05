@@ -49,9 +49,16 @@ def get_date_range():
     if os.path.exists("thrive_google_leads.xlsx"):
         os.remove("thrive_google_leads.xlsx")
 
+    # # get form list
     jotformAPIClient = JotformAPIClient(jotform_apikey)
     jotform_info['form_list'] = get_forms(
         jotform_info['start_date'], jotformAPIClient)
+
+    # # get form submissions
+    # submissions = organize_form_submission_list_async(jotform_info)
+
+    # # create google leads excel files
+    # create_google_leads_excel_files(submissions)
 
     return jsonify(jotform_info['form_list'])
 
@@ -62,7 +69,7 @@ def get_forms_and_submissions():
     hack = request.get_json()
     organized_form_submission_list_obj = organize_form_submission_list_async(
         jotform_info['form_list'], jotform_info['start_date'], jotform_info['end_date'])
-    if len(jotform_info['organized_form_submissions']['gf']) == 0:
+    if len(jotform_info['organized_form_submissions']['gf']) != 0:
         jotform_info['organized_form_submissions']['gf'].clear()
         jotform_info['organized_form_submissions']['thrive'].clear()
     jotform_info['organized_form_submissions'] = organized_form_submission_list_obj
