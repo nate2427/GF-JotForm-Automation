@@ -1,3 +1,4 @@
+from itertools import count
 from jotform import *
 import os
 import time
@@ -339,7 +340,8 @@ def get_value_from_answers(key, answers, column_names, isPhone):
 def create_google_leads_excel_files(google_leads_obj):
     gf_google_leads = google_leads_obj['gf']
     thrive_google_leads = google_leads_obj['thrive']
-    create_google_leads_excel_file(gf_google_leads, filename="gf_google_leads")
+    create_google_leads_excel_file(
+        gf_google_leads, filename="gf_google_leads")
     create_google_leads_excel_file(
         thrive_google_leads, filename="thrive_google_leads")
     return ("gf_google_leads.xlsx", "thrive_google_leads.xlsx")
@@ -351,9 +353,6 @@ def create_google_leads_excel_file(google_leads_list, filename):
 
 
 def create_excel_file(google_leads_list, excel_sheet_name):
-    # remove file if it exists
-    if os.path.exists(excel_sheet_name):
-        os.remove(excel_sheet_name)
     google_leads_excel_file = xlsxwriter.Workbook(excel_sheet_name)
     google_leads_excel_sheet = google_leads_excel_file.add_worksheet()
 

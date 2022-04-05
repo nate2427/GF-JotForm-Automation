@@ -1,3 +1,4 @@
+from itertools import count
 import os
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS, cross_origin
@@ -19,7 +20,7 @@ jotform_info = {
         "gf": [],
         "thrive": [],
     },
-    "files": None
+    "files": None,
 }
 
 
@@ -34,6 +35,19 @@ def get_date_range():
     data = request.get_json()
     jotform_info['start_date'] = data["start_date"] + " 00:00:00"
     jotform_info['end_date'] = data["end_date"] + " 23:59:59"
+
+    # reset jotform_info
+    jotform_info["form_list"] = []
+    jotform_info["organized_form_submissions"] = {
+        "gf": [],
+        "thrive": [],
+    }
+    jotform_info["files"] = None
+    # remove xl files if they exists
+    if os.path.exists("gf_google_leads.xlsx"):
+        os.remove("gf_google_leads.xlsx")
+    if os.path.exists("thrive_google_leads.xlsx"):
+        os.remove("thrive_google_leads.xlsx")
 
     jotformAPIClient = JotformAPIClient(jotform_apikey)
     jotform_info['form_list'] = get_forms(
