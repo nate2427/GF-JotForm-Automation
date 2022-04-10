@@ -62,14 +62,14 @@ class GF_Google_Lead_Submission:
             self.utm_campaign = ''.join(form_name.lower().split(" "))
 
         # check form title to find forms from GF Homepage
-        sub_name = ""
-        if len(form_name) > 7:
-            sub_name = form_name[:7]
-        if sub_name == "Home - ":
-            temp_medium = self.utm_source
-            temp_source = self.utm_medium
-            self.utm_source = temp_source
-            self.utm_medium = temp_medium
+        # sub_name = ""
+        # if len(form_name) > 7:
+        #     sub_name = form_name[:7]
+        # if sub_name == "Home - ":
+        #     temp_medium = self.utm_source
+        #     temp_source = self.utm_medium
+        #     self.utm_source = temp_source
+        #     self.utm_medium = temp_medium
 
     def toJSON(self):
         return {

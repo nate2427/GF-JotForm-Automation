@@ -22,3 +22,8 @@ Thrive leads list size:  465
 --- 26.63950490951538 seconds ---
 GF leads list size:  1343
 Thrive leads list size:  465
+
+
+right now for "Home - " im flipping the logic incorrectly.
+I current have it doing org then website
+Needs to be website then org
