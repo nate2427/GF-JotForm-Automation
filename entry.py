@@ -188,9 +188,9 @@ def create_conditions(offset, limit, filterArray, order_by):
     return params
 
 
-async def get_form_submissions(session, form_id, title, startDate, endDate):
+async def get_form_submissions(session, form_id, title, form_len, startDate, endDate):
     params = create_conditions(
-        0, 10000, {'created_at:gte': startDate, 'created_at:lte': endDate}, "created_at")
+        0, 1000, {'created_at:gte': startDate, 'created_at:lte': endDate}, "created_at")
     url = "https://api.jotform.com/form/{form_id}/submissions?apiKey={jotformAPIKey}".format(
         form_id=form_id, jotformAPIKey=jotform_apikey)
 
@@ -199,6 +199,18 @@ async def get_form_submissions(session, form_id, title, startDate, endDate):
     async with session.get(url, params=params) as resp:
         data = await resp.json()
         form_submissions = data['content']
+        while len(form_submissions) >= 1000 and form_submissions[len(form_submissions) - 1]['created_at'] > startDate:
+            if form_len == len(form_submissions):
+                break
+            params = create_conditions(
+                len(form_submissions), 1000, {'created_at:gte': startDate, 'created_at:lte': endDate}, "created_at")
+            url = "https://api.jotform.com/form/{form_id}/submissions?apiKey={jotformAPIKey}".format(
+                form_id=form_id, jotformAPIKey=jotform_apikey)
+            async with session.get(url, params=params) as resp2:
+                data = await resp2.json()
+                if len(data['content']) == 0:
+                    break
+                form_submissions.extend(data['content'])
 
     gf_google_leads = []
     thrive_google_leads = []
@@ -244,7 +256,7 @@ async def gather_form_submissions(form_submission_list, startDate, endDate):
     async with aiohttp.ClientSession() as session:
         for form in form_submission_list:
             task = asyncio.ensure_future(get_form_submissions(
-                session, form['id'], form['title'], startDate, endDate))
+                session, form['id'], form['title'], form['len'], startDate, endDate))
             tasks.append(task)
         res = await asyncio.gather(*tasks)
     return res
@@ -417,6 +429,7 @@ def get_forms(startDate, jotform_client):
         forms.append({
             'id': form['id'],
             'title': form['title'],
+            'len': form['count'],
         })
     return forms
 
