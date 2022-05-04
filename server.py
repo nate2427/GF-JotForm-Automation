@@ -49,7 +49,7 @@ def get_date_range():
     if os.path.exists("thrive_google_leads.xlsx"):
         os.remove("thrive_google_leads.xlsx")
 
-    # # get form list
+    # # get form list from jotform
     jotformAPIClient = JotformAPIClient(jotform_apikey)
     jotform_info['form_list'] = get_forms(
         jotform_info['start_date'], jotformAPIClient)
